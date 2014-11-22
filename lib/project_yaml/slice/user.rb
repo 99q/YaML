@@ -20,7 +20,7 @@ module ProjectYaML
           "get_all_users",
           "get_user_by_uuid",
           "add_user",
-          nil,
+          "update_user",
           "remove_all_user",
           "remove_user_by_uuid")
 
@@ -42,10 +42,12 @@ module ProjectYaML
         # been asked for generic help, so provide generic help
         puts "User Slice: used to view users and to remove users.".red
         puts "User Commands:".yellow
-        puts "\tyaml user [get] [all]          " + "View all users".yellow
-        puts "\tyaml user [get] (UUID)         " + "View specific user (log)".yellow
-        puts "\tyaml user remove (UUID)|all    " + "Remove existing (or all) user(s)".yellow
-        puts "\tyaml user --help|-h            " + "Display this screen".yellow
+        puts "\tyaml user [get] [all]                      " + "View all users".yellow
+        puts "\tyaml user [get] (UUID)                     " + "View specific user (log)".yellow
+        puts "\tyaml user add (options...)                 " + "Create a new user".yellow
+        puts "\tyaml user update (UUID) (options...)       " + "Update an existing user".yellow
+        puts "\tyaml user remove (UUID)|all                " + "Remove existing (or all) user(s)".yellow
+        puts "\tyaml user --help|-h                        " + "Display this screen".yellow
       end
 
       def all_command_option_data
@@ -56,14 +58,6 @@ module ProjectYaML
               :short_form  => '-n',
               :long_form   => '--name NAME',
               :description => 'The name of user.',
-              :uuid_is     => 'not_allowed',
-              :required    => true
-            },
-            { :name        => :label,
-              :default     => nil,
-              :short_form  => '-l',
-              :long_form   => '--label LABEL',
-              :description => 'A label to name this user.',
               :uuid_is     => 'not_allowed',
               :required    => true
             },
@@ -81,6 +75,48 @@ module ProjectYaML
               :long_form   => '--birth BIRTH',
               :description => 'The birthday of user.',
               :uuid_is     => 'not_allowed',
+              :required    => false
+            },
+          ],
+          :update  =>  [
+            { :name        => :score,
+              :default     => nil,
+              :short_form  => '-s',
+              :long_form   => '--score SCORE',
+              :description => 'The score of user.',
+              :uuid_is     => 'required',
+              :required    => true
+            },
+            { :name        => :yaml,
+              :default     => nil,
+              :short_form  => '-y',
+              :long_form   => '--yaml YAML',
+              :description => 'The completed yaml of user.',
+              :uuid_is     => 'required',
+              :required    => true
+            },
+            { :name        => :cyaml,
+              :default     => nil,
+              :short_form  => '-c',
+              :long_form   => '--current_yaml current_yaml',
+              :description => 'The current yaml activity of user.',
+              :uuid_is     => 'required',
+              :required    => true
+            },
+            { :name        => :like,
+              :default     => nil,
+              :short_form  => '-l',
+              :long_form   => '--like LIKE-IMAGE',
+              :description => 'Images liked by user.',
+              :uuid_is     => 'required',
+              :required    => true
+            },
+            { :name        => :image,
+              :default     => nil,
+              :short_form  => '-i',
+              :long_form   => '--image IMAGE',
+              :description => 'Images uploaded from user policy.',
+              :uuid_is     => 'required',
               :required    => true
             },
           ]
@@ -145,13 +181,41 @@ module ProjectYaML
           user.web_create_metadata(req_metadata_hash)
         end
 
-        user.label  = options[:label]
         user.name   = options[:name]
         user.gender = options[:gender]
-        user.birth  = options[:birth]
+        user.birth  = options[:birth] if options[:birth]
 
         @data.persist_object(user)
         user ? print_object_array([user], "User created", :success_type => :created) : raise(ProjectYaML::Error::Slice::CouldNotCreate, "Could not create User")
+      end
+
+      def update_user
+        @command = :update_user
+        includes_uuid = false
+        # load the appropriate option items for the subcommand we are handling
+        option_items = command_option_data(:update)
+        # parse and validate the options that were passed in as part of this
+        # subcommand (this method will return a UUID value, if present, and the
+        # options map constructed from the @commmand_array)
+        user_uuid, options = parse_and_validate_options(option_items, "razor user update UUID (options...)", :require_one)
+        includes_uuid = true if user_uuid
+        # check for usage errors (the boolean value at the end of this method
+        # call is used to indicate whether the choice of options from the
+        # option_items hash must be an exclusive choice)
+        check_option_usage(option_items, options, includes_uuid, false)
+        user = get_object("user_with_uuid", :user, user_uuid)
+        raise ProjectRazor::Error::Slice::InvalidUUID, "Invalid User UUID [#{user_uuid}]" unless user && (user.class != Array || user.length > 0)
+
+        # Update object properties
+        user.score = options[:score] if options[:score]
+        user.like_images.push options[:like] if options[:like]
+        user.yamls.push options[:yaml] if options[:yaml]
+        user.image.push options[:image] if options[:image]
+        user.current_yaml = options[:current_yaml] if options[:current_yaml]
+
+        # Update object
+        raise ProjectRazor::Error::Slice::CouldNotUpdate, "Could not update [#{user.uuid}]" unless user.update_self
+        print_object_array [user], "", :success_type => :updated
       end
     end
   end

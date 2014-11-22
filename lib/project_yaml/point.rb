@@ -1,47 +1,43 @@
 require 'require_all'
 
 module ProjectYaML
-  class User < ProjectYaML::Object
+  class Point < ProjectYaML::Object
     include(ProjectYaML::Logging)
 
     attr_accessor :name
-    attr_accessor :gender
-    attr_accessor :birth
-    attr_accessor :score
+    attr_accessor :description
+    attr_accessor :type
+    attr_accessor :geo
     attr_accessor :images
-    attr_accessor :like_images
-    attr_accessor :yamls
-    attr_accessor :current_yaml
+    attr_accessor :checkin_cn
     attr_accessor :req_metadata_hash
 
     def initialize(hash)
       super()
-      @score = 0
-      @gender = 'male'
-      @birth = Date.new(1987, 10, 1).to_time.to_i
+      @name = nil
       @images = []
-      @like_images = []
-      @yamls = []
-      @current_yaml = nil
-      @noun = "user"
-      @_namespace = :user
+      @geo = []
+      @description = nil
+      @noun = "point"
+      @checkin_cn = 0
+      @_namespace = :point
       from_hash(hash) unless hash == nil
     end
 
     def print_header
-      return "Name", "Score", "Age", "YaMls", "UUID"
-    end
-
-    def print_item
-      return @name, @score.to_s, age, "[#{@yamls.join(',')}]", @current_yaml.to_s, "[#{@images.join(',')}]", "[#{@like_images.join(',')}]", @uuid
-    end
-
-    def print_item_header
-      return "Name", "Score", "Age", "YaMLs", "Current-YaML", "Images", "Likes", "UUID"
+      return "Name", "Type", "Checkins", "Images", "UUID"
     end
 
     def print_items
-      return @name, @score.to_s, age, @yamls.size.to_s, @uuid
+      return @name, @type, @checkin_cn.to_s, @images.size.to_s, @uuid
+    end
+
+    def print_item
+      return @name, @type, @description, @checkin_cn.to_i, "[#{@images.join(',')}]", @uuid
+    end
+
+    def print_item_header
+      return "Name", "Type", "Description", "Checkins", "Images", "UUID"
     end
 
     def line_color
@@ -50,14 +46,6 @@ module ProjectYaML
 
     def header_color
       :red_on_black
-    end
-
-    def age
-      today = Date.today
-      birthday = Time.at(@birth.to_i).to_datetime
-      age = today.year - birthday.year
-      age -= 1 if birthday.strftime("%m%d").to_i > today.strftime("%m%d").to_i
-      age.to_s
     end
 
     def config

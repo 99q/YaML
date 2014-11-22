@@ -37,9 +37,10 @@ require "project_yaml/config"
 require "project_yaml/slice"
 require "project_yaml/persist"
 require "project_yaml/user"
-#require "project_yaml/route"
-#require "project_yaml/image"
-#require "project_yaml/ipoint"
+require "project_yaml/point"
+require "project_yaml/image"
+require "project_yaml/route"
+require "project_yaml/yaml"
 
 
 # Root ProjectYaML namespace
